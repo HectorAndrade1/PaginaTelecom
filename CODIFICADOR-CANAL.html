@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Codificador de Canal</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --k-color: #2563eb;      /* Azul para Información Útil */
+      --k-bg: #dbeafe;
+      --parity-color: #d97706; /* Naranja para Redundancia */
+      --parity-bg: #fef3c7;
+      --n-color: #059669;      /* Verde para Palabra de Código */
+      --n-bg: #d1fae5;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h2 {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    /* Panel de Control e Inputs */
+    .control-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 550px) {
+      .control-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+    }
+
+    select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: white;
+      font-size: 0.95rem;
+      color: var(--text-color);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .bits-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .bit-btn {
+      flex: 1;
+      height: 38px;
+      border: 2px solid var(--k-color);
+      background: white;
+      color: var(--k-color);
+      font-weight: bold;
+      font-size: 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .bit-btn.active-1 {
+      background: var(--k-color);
+      color: white;
+    }
+
+    /* Diagrama de Flujo del Codificador */
+    .diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 25px 0;
+      position: relative;
+      gap: 10px;
+    }
+
+    .diagram-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+    }
+
+    .encoder-box {
+      background: #334155;
+      color: white;
+      padding: 15px 10px;
+      border-radius: 8px;
+      text-align: center;
+      width: 100%;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .encoder-box .title {
+      font-weight: bold;
+      font-size: 1.05rem;
+    }
+
+    .encoder-box .subtitle {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .arrow {
+      font-size: 1.3rem;
+      color: #94a3b8;
+      font-weight: bold;
+    }
+
+    /* Display de Bits */
+    .bit-tag {
+      display: flex;
+      gap: 4px;
+    }
+
+    .bit-box {
+      width: 26px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .bit-k { background: var(--k-bg); color: var(--k-color); }
+    .bit-p { background: var(--parity-bg); color: var(--parity-color); }
+
+    /* Sección de Desglose */
+    .breakdown-section {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 550px) {
+      .breakdown-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .diagram {
+        flex-direction: column;
+      }
+      .diagram-node { min-width: 0; width: 100%; }
+      .diagram .arrow { transform: rotate(90deg); }
+      .bit-tag { flex-wrap: wrap; justify-content: center; }
+    }
+
+    .card {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-k { background: #eff6ff; border-color: #bfdbfe; }
+    .card-p { background: #fffbeb; border-color: #fef3c7; }
+    .card-n { background: #ecfdf5; border-color: #a7f3d0; }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .card-k .card-title { color: var(--k-color); }
+    .card-p .card-title { color: var(--parity-color); }
+    .card-n .card-title { color: var(--n-color); }
+
+    .card-value {
+      font-family: monospace;
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    /* Cuadro de Explicación Dinámica */
+    .explanation-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .explanation-box strong {
+      color: var(--primary-color);
+    }
+  
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+.page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html" class="active">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+<div class="container">
+  <header>
+    <h2>Codificador de Canal Hamming (7,4)</h2>
+    <p>Simulación interactiva de protección de datos mediante redundancia (n = k + r)</p>
+  </header>
+
+  <!-- Selección de Ejemplos y Entradas -->
+  <div class="control-panel">
+    <div class="control-group">
+      <label for="exampleSelect">Ejemplos Preconfigurados:</label>
+      <select id="exampleSelect" onchange="loadExample(this.value)">
+        <option value="1011" selected>Ejemplo 1: 1011</option>
+        <option value="0000">Ejemplo 2: 0000</option>
+        <option value="1111">Ejemplo 3: 1111</option>
+        <option value="0101">Ejemplo 4: 0101</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Bits de Información (k = 4):</label>
+      <div class="bits-selector">
+        <button class="bit-btn" id="btn-d0" onclick="toggleBit(0)">1</button>
+        <button class="bit-btn" id="btn-d1" onclick="toggleBit(1)">0</button>
+        <button class="bit-btn" id="btn-d2" onclick="toggleBit(2)">1</button>
+        <button class="bit-btn" id="btn-d3" onclick="toggleBit(3)">1</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagrama de Flujo del Proceso -->
+  <div class="diagram">
+    <div class="diagram-node">
+      <span style="font-size: 0.8rem; font-weight: bold; color: var(--k-color);">Entrada (k = 4)</span>
+      <div class="bit-tag" id="input-display"></div>
+    </div>
+
+    <div class="arrow">&rarr;</div>
+
+    <div class="diagram-node" style="flex: 1.2;">
+      <div class="encoder-box">
+        <div class="title">Codificador (7,4)</div>
+        <div class="subtitle">Calcula p<sub>1</sub>, p<sub>2</sub>, p<sub>3</sub></div>
+      </div>
+    </div>
+
+    <div class="arrow">&rarr;</div>
+
+    <div class="diagram-node">
+      <span style="font-size: 0.8rem; font-weight: bold; color: var(--n-color);">Salida (n = 7)</span>
+      <div class="bit-tag" id="output-display"></div>
+    </div>
+  </div>
+
+  <!-- Desglose de Resultados -->
+  <div class="breakdown-section">
+    <div class="card card-k">
+      <span class="card-title">Información Útil (k)</span>
+      <span class="card-value" id="val-k">1011</span>
+      <span style="font-size: 0.75rem; color: #64748b;">4 Bits Originales</span>
+    </div>
+
+    <div class="card card-p">
+      <span class="card-title">Redundancia / Paridad (r)</span>
+      <span class="card-value" id="val-p">010</span>
+      <span style="font-size: 0.75rem; color: #64748b;">3 Bits de Protección</span>
+    </div>
+
+    <div class="card card-n">
+      <span class="card-title">Palabra de Código (n)</span>
+      <span class="card-value" id="val-n" style="color: var(--n-color);">1011010</span>
+      <span style="font-size: 0.75rem; color: #64748b;">Bloque Transmitido (7 Bits)</span>
+    </div>
+  </div>
+
+  <!-- Explicación Dinámica -->
+  <div class="explanation-box" id="explanation">
+    Cargando explicación...
+  </div>
+</div>
+
+<script>
+  // Bits de datos leídos de izquierda a derecha [b0, b1, b2, b3]
+  let dataBits = [1, 0, 1, 1];
+
+  function toggleBit(index) {
+    dataBits[index] = dataBits[index] === 1 ? 0 : 1;
+    document.getElementById('exampleSelect').value = "";
+    processAndRender();
+  }
+
+  function loadExample(val) {
+    if (!val) return;
+    dataBits = val.split('').map(Number);
+    processAndRender();
+  }
+
+  function processAndRender() {
+    const [b0, b1, b2, b3] = dataBits;
+
+    // Actualizar botones superiores de izquierda a derecha
+    const btnIds = ['btn-d0', 'btn-d1', 'btn-d2', 'btn-d3'];
+    dataBits.forEach((bit, idx) => {
+      const btn = document.getElementById(btnIds[idx]);
+      btn.textContent = bit;
+      if (bit === 1) {
+        btn.classList.add('active-1');
+      } else {
+        btn.classList.remove('active-1');
+      }
+    });
+
+    /* 
+      CÁLCULO DE PARIDAD (Sistema Sistemático para docencia clara):
+      p1 = b0 ^ b1 ^ b3
+      p2 = b0 ^ b2 ^ b3
+      p3 = b1 ^ b2 ^ b3
+    */
+    const p1 = b0 ^ b1 ^ b3;
+    const p2 = b0 ^ b2 ^ b3;
+    const p3 = b1 ^ b2 ^ b3;
+
+    const kStr = `${b0}${b1}${b2}${b3}`;
+    const pStr = `${p1}${p2}${p3}`;
+    
+    // Forma sistemática: [Datos útiles primero] + [Bits de paridad al final]
+    const codewordArray = [
+      { v: b0, type: 'k' },
+      { v: b1, type: 'k' },
+      { v: b2, type: 'k' },
+      { v: b3, type: 'k' },
+      { v: p1, type: 'p' },
+      { v: p2, type: 'p' },
+      { v: p3, type: 'p' }
+    ];
+
+    // Renderizar recuadros de colores
+    renderBitBoxes('input-display', dataBits.map(b => ({ v: b, type: 'k' })));
+    renderBitBoxes('output-display', codewordArray);
+
+    // Actualizar tarjetas inferiores
+    document.getElementById('val-k').textContent = kStr;
+    document.getElementById('val-p').textContent = pStr;
+    document.getElementById('val-n').textContent = kStr + pStr;
+
+    // Actualizar explicación
+    updateExplanation(b0, b1, b2, b3, p1, p2, p3, kStr, pStr);
+  }
+
+  function renderBitBoxes(elementId, items) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = '';
+    items.forEach(item => {
+      const box = document.createElement('div');
+      box.className = `bit-box bit-${item.type}`;
+      box.textContent = item.v;
+      container.appendChild(box);
+    });
+  }
+
+  function updateExplanation(b0, b1, b2, b3, p1, p2, p3, kStr, pStr) {
+    const totalOnesK = b0 + b1 + b2 + b3;
+    const expDiv = document.getElementById('explanation');
+
+    expDiv.innerHTML = `
+      <strong>Análisis del bloque actual:</strong> Para transmitir la información útil <code>${kStr}</code> (${totalOnesK} uno/s), el codificador calcula 3 bits de paridad:
+      <code>p₁ = ${p1}</code>, <code>p₂ = ${p2}</code> y <code>p₃ = ${p3}</code>.<br>
+      En la salida se observa primero la <strong>información útil</strong> (<code>${kStr}</code>) seguida de la <strong>redundancia agregada</strong> (<code>${pStr}</code>), formando el paquete total de 7 bits (<code>${kStr}${pStr}</code>) listo para ser enviado por el canal.
+    `;
+  }
+
+  processAndRender();
+</script>
+
+</div>
+</body>
+</html>

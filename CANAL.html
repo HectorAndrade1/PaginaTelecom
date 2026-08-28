@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Canal de Transmisión</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h2 {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .legend-tx { color: #2563eb; }
+    .legend-rx { color: #dc2626; }
+
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 260px;
+      background: #0f172a; /* Fondo estilo osciloscopio */
+      border-radius: 8px;
+      display: block;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .explanation-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .explanation-box strong {
+      color: var(--primary-color);
+    }
+  
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html" class="active">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div style="padding:20px; max-width:1060px; margin:0 auto;">
+
+<div class="container">
+  <header>
+    <h2>Canal de Transmisión: Degradación de Bits</h2>
+    <p>Viaje de la trama de datos modulada a través del medio con ruido</p>
+  </header>
+
+  <div class="legend">
+    <span class="legend-tx">Transmisor (Señal &amp; Bits Íntegros) &rarr;</span>
+    <span style="color: #64748b;">Medio Físico con Ruido</span>
+    <span class="legend-rx">&rarr; Receptor (Riesgo de Error de Bit)</span>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="channelCanvas"></canvas>
+  </div>
+
+  <div class="explanation-box">
+    <strong>Efecto del Ruido en los Bits:</strong><br>
+    Los bits (<code>101010011</code>) viajan montados sobre la onda analógica. A medida que avanzan por el cable, el ruido ambiental distorsiona la forma de la onda. Si la interferencia es muy fuerte cerca del receptor, los bits pueden volverse <strong>corruptos (!)</strong>, alterando la información original recibida.
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('channelCanvas');
+  let ctx, width, height;
+  
+  // Secuencia fija de bits a transmitir
+  const bitStream = [1, 0, 1, 0, 1, 0, 0, 1, 1];
+  const bitSpacing = 70; // Espaciado entre etiquetas de bits
+  const totalLength = bitStream.length * bitSpacing;
+
+  let globalOffset = 0; // Posición global para mover datos y onda hacia la derecha
+
+  function setupCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    width = rect.width;
+    height = rect.height;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    const centerY = height / 2;
+    const cableRadius = 55;
+
+    // 1. ESTRUCTURA DEL CABLE
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, centerY - cableRadius, width, cableRadius * 2);
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, centerY - cableRadius); ctx.lineTo(width, centerY - cableRadius);
+    ctx.moveTo(0, centerY + cableRadius); ctx.lineTo(width, centerY + cableRadius);
+    ctx.stroke();
+
+    // 2. DIBUJAR ONDA SENOIDAL CON RUIDO
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    // Guardaremos valores Y para posicionar exactamente los bits sobre los picos de la onda
+    const waveYMap = {};
+
+    for (let x = 0; x <= width; x++) {
+      const progress = x / width; // 0 (Transmisor) a 1 (Receptor)
+
+      // Onda analógica modulada en movimiento
+      const freq = 0.05;
+      const baseWave = Math.sin((x - globalOffset) * freq);
+      
+      const maxAmp = 25;
+      const amp = maxAmp * (1 - (progress * 0.2));
+
+      // El ruido térmico incrementa con la distancia
+      const noiseLevel = progress * 14; 
+      const noise = (Math.random() - 0.5) * noiseLevel;
+
+      const y = centerY - (amp * baseWave) + noise;
+      waveYMap[Math.floor(x)] = y;
+
+      if (x === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    // Degradado de color de la onda (Verde/Azul a Rojo por el ruido)
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    gradient.addColorStop(0, '#2563eb');
+    gradient.addColorStop(0.6, '#f59e0b');
+    gradient.addColorStop(1, '#ef4444');
+    ctx.strokeStyle = gradient;
+    ctx.stroke();
+
+    // 3. DIBUJAR BITS FLOTANDO Y MOVIÉNDOSE CON LA ONDA
+    bitStream.forEach((bitVal, i) => {
+      // Posición X del bit avanzando de izquierda a derecha en bucle continuo
+      let bitX = (globalOffset + (i * bitSpacing)) % (width + bitSpacing) - 50;
+      
+      if (bitX >= 0 && bitX <= width) {
+        const progress = bitX / width;
+        const waveY = waveYMap[Math.floor(bitX)] || centerY;
+
+        // Simulación de corrupción de bit por ruido (probabilidad alta al final del cable)
+        const isCorrupted = progress > 0.65 && Math.random() < (progress - 0.5) * 0.3;
+        const displayBit = isCorrupted ? (bitVal === 1 ? 0 : 1) : bitVal;
+
+        // Estilos del recuadro del bit
+        const boxWidth = 26;
+        const boxHeight = 24;
+        const boxY = waveY - 38; // Flota justo sobre la onda
+
+        // Color según salud del bit (Azul = Bueno, Rojo = Corrupto/En Error)
+        if (isCorrupted) {
+          ctx.fillStyle = '#ef4444';
+          ctx.strokeStyle = '#b91c1c';
+        } else {
+          ctx.fillStyle = bitVal === 1 ? '#2563eb' : '#475569';
+          ctx.strokeStyle = '#ffffff';
+        }
+
+        // Dibujar caja del bit
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bitX - boxWidth/2, boxY - boxHeight/2, boxWidth, boxHeight, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        // Texto del Bit interior
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const labelText = isCorrupted ? '!' : displayBit;
+        ctx.fillText(labelText, bitX, boxY);
+
+        // Flecha o conector puntual hacia la onda
+        ctx.strokeStyle = isCorrupted ? '#ef4444' : 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bitX, boxY + boxHeight/2);
+        ctx.lineTo(bitX, waveY);
+        ctx.stroke();
+      }
+    });
+
+    // 4. AVANZAR ANIMACIÓN CONTINUA
+    globalOffset += 1.8; // Velocidad del movimiento
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', setupCanvas);
+  setupCanvas();
+  draw();
+</script>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Modulador Digital</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --digital-color: #2563eb;    /* Azul para señal digital */
+      --modulated-color: #d97706;  /* Naranja para señal modulada */
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h2 {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    /* Panel de Control */
+    .control-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 550px) {
+      .control-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+    }
+
+    .bits-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .bit-btn {
+      flex: 1;
+      height: 38px;
+      border: 2px solid var(--digital-color);
+      background: white;
+      color: var(--digital-color);
+      font-weight: bold;
+      font-size: 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .bit-btn.active-1 {
+      background: var(--digital-color);
+      color: white;
+    }
+
+    /* Botones de Modulación (Tabs) */
+    .mod-selector {
+      display: flex;
+      gap: 6px;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 6px;
+    }
+
+    .mod-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      color: #475569;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mod-btn.active {
+      background: white;
+      color: var(--primary-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Área de Gráficos HTML5 Canvas */
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .graph-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .graph-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .title-digital { color: var(--digital-color); }
+    .title-modulated { color: var(--modulated-color); }
+
+    canvas {
+      width: 100%;
+      height: 140px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      display: block;
+    }
+
+    /* Cuadro de Explicación Dinámica */
+    .explanation-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .explanation-box strong {
+      color: var(--primary-color);
+    }
+  
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+.page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html" class="active">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+<div class="container">
+  <header>
+    <h2>Modulador Digital</h2>
+    <p>Simulación interactiva de conversión de datos digitales a ondas analógicas</p>
+  </header>
+
+  <!-- Panel de Control e Inputs -->
+  <div class="control-panel">
+    <div class="control-group">
+      <label>Secuencia de Bits de Entrada:</label>
+      <div class="bits-selector">
+        <button class="bit-btn active-1" id="btn-b0" onclick="toggleBit(0)">1</button>
+        <button class="bit-btn" id="btn-b1" onclick="toggleBit(1)">0</button>
+        <button class="bit-btn active-1" id="btn-b2" onclick="toggleBit(2)">1</button>
+        <button class="bit-btn active-1" id="btn-b3" onclick="toggleBit(3)">1</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Técnica de Modulación:</label>
+      <div class="mod-selector">
+        <button class="mod-btn active" id="btn-fsk" onclick="setModulation('FSK')">FSK</button>
+        <button class="mod-btn" id="btn-psk" onclick="setModulation('PSK')">PSK</button>
+        <button class="mod-btn" id="btn-qam" onclick="setModulation('QAM')">QAM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lienzos de Dibujo (Canvas) -->
+  <div class="canvas-container">
+    <div class="graph-wrapper">
+      <span class="graph-title title-digital">1. Señal Digital Base (Datos)</span>
+      <canvas id="digitalCanvas"></canvas>
+    </div>
+
+    <div class="graph-wrapper">
+      <span class="graph-title title-modulated" id="modulatedTitle">2. Señal Modulada Analógica (FSK)</span>
+      <canvas id="modulatedCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Explicación Dinámica -->
+  <div class="explanation-box" id="explanation">
+    Cargando explicación...
+  </div>
+</div>
+
+<script>
+  // Estado de la aplicación
+  let dataBits = [1, 0, 1, 1];
+  let currentModulation = 'FSK'; // 'FSK', 'PSK', o 'QAM'
+
+  function toggleBit(index) {
+    dataBits[index] = dataBits[index] === 1 ? 0 : 1;
+    render();
+  }
+
+  function setModulation(mod) {
+    currentModulation = mod;
+    
+    ['FSK', 'PSK', 'QAM'].forEach(m => {
+      const btn = document.getElementById(`btn-${m.toLowerCase()}`);
+      if (m === mod) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    render();
+  }
+
+  function render() {
+    // 1. Actualizar botones de bits
+    const btnIds = ['btn-b0', 'btn-b1', 'btn-b2', 'btn-b3'];
+    dataBits.forEach((bit, idx) => {
+      const btn = document.getElementById(btnIds[idx]);
+      btn.textContent = bit;
+      if (bit === 1) {
+        btn.classList.add('active-1');
+      } else {
+        btn.classList.remove('active-1');
+      }
+    });
+
+    // 2. Actualizar título
+    const modNames = {
+      'FSK': '2. Señal Modulada Analógica (FSK - Frequency Shift Keying)',
+      'PSK': '2. Señal Modulada Analógica (PSK - Phase Shift Keying)',
+      'QAM': '2. Señal Modulada Analógica (QAM - Quadrature Amplitude Modulation)'
+    };
+    document.getElementById('modulatedTitle').textContent = modNames[currentModulation];
+
+    // 3. Dibujar señales
+    drawDigitalSignal();
+    drawModulatedSignal();
+
+    // 4. Actualizar explicación
+    updateExplanation();
+  }
+
+  function setupCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx, width: rect.width, height: rect.height };
+  }
+
+  // DIBUJAR SEÑAL DIGITAL
+  function drawDigitalSignal() {
+    const canvas = document.getElementById('digitalCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const numBits = dataBits.length;
+    const bitWidth = width / numBits;
+    const padY = 20;
+    const yHigh = padY;
+    const yLow = height - padY;
+
+    // Rejilla vertical
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    for (let i = 1; i < numBits; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * bitWidth, 0);
+      ctx.lineTo(i * bitWidth, height);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Pulso cuadrado
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    dataBits.forEach((bit, i) => {
+      const xStart = i * bitWidth;
+      const xEnd = (i + 1) * bitWidth;
+      const yVal = bit === 1 ? yHigh : yLow;
+
+      if (i === 0) {
+        ctx.moveTo(xStart, yVal);
+      } else {
+        ctx.lineTo(xStart, yVal);
+      }
+      ctx.lineTo(xEnd, yVal);
+    });
+
+    ctx.stroke();
+  }
+
+  // DIBUJAR SEÑAL MODULADA ANALÓGICA
+  function drawModulatedSignal() {
+    const canvas = document.getElementById('modulatedCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const centerY = height / 2;
+    const maxAmplitude = (height / 2) - 12;
+
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    let firstPoint = true;
+
+    if (currentModulation === 'QAM') {
+      // QAM agrupa los 4 bits en 2 símbolos (2 bits por símbolo)
+      const symbols = [
+        [dataBits[0], dataBits[1]],
+        [dataBits[2], dataBits[3]]
+      ];
+      const symbolWidth = width / 2;
+
+      // Dibujar división de símbolos
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(symbolWidth, 0);
+      ctx.lineTo(symbolWidth, height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2.5;
+
+      symbols.forEach((sym, i) => {
+        const xStart = i * symbolWidth;
+        const points = 150;
+        const symStr = `${sym[0]}${sym[1]}`;
+
+        // Asignación de Amplitud y Fase según el par de bits (4-QAM / QPSK)
+        let amp = maxAmplitude;
+        let phase = 0;
+
+        if (symStr === '11') { amp = maxAmplitude; phase = 0; }
+        else if (symStr === '10') { amp = maxAmplitude * 0.4; phase = 0; }
+        else if (symStr === '01') { amp = maxAmplitude; phase = Math.PI; }
+        else if (symStr === '00') { amp = maxAmplitude * 0.4; phase = Math.PI; }
+
+        for (let p = 0; p <= points; p++) {
+          const xRel = p / points;
+          const x = xStart + (xRel * symbolWidth);
+          const angle = (2 * Math.PI * 3 * xRel) + phase; // 3 ciclos por símbolo
+          const y = centerY - (amp * Math.sin(angle));
+
+          if (firstPoint) {
+            ctx.moveTo(x, y);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      });
+
+    } else {
+      // FSK y PSK procesan bit a bit (4 divisiones)
+      const numBits = dataBits.length;
+      const bitWidth = width / numBits;
+
+      // Rejilla
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      for (let i = 1; i < numBits; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * bitWidth, 0);
+        ctx.lineTo(i * bitWidth, height);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2.5;
+
+      dataBits.forEach((bit, i) => {
+        const xStart = i * bitWidth;
+        const points = 100;
+
+        for (let p = 0; p <= points; p++) {
+          const xRel = p / points;
+          const x = xStart + (xRel * bitWidth);
+
+          let amplitude = maxAmplitude;
+          let cycles = 2;
+          let phaseShift = 0;
+
+          if (currentModulation === 'FSK') {
+            // Bit 1 = Alta Frecuencia | Bit 0 = Baja Frecuencia
+            cycles = bit === 1 ? 4 : 1.5;
+          } else if (currentModulation === 'PSK') {
+            // Bit 1 = Fase 0° | Bit 0 = Desfase 180° (PI)
+            phaseShift = bit === 1 ? 0 : Math.PI;
+          }
+
+          const angle = (2 * Math.PI * cycles * xRel) + phaseShift;
+          const y = centerY - (amplitude * Math.sin(angle));
+
+          if (firstPoint) {
+            ctx.moveTo(x, y);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+      });
+    }
+
+    ctx.stroke();
+  }
+
+  function updateExplanation() {
+    const expDiv = document.getElementById('explanation');
+    const bitStr = dataBits.join('');
+
+    if (currentModulation === 'FSK') {
+      expDiv.innerHTML = `
+        <strong>Modulación por Conmutación de Frecuencia (FSK):</strong><br>
+        Varía la <strong>frecuencia (velocidad)</strong> de la onda. Para la secuencia <code>${bitStr}</code>: 
+        el bit <strong>1</strong> genera una onda rápida de alta frecuencia, mientras que el bit <strong>0</strong> genera una onda más lenta de baja frecuencia.
+      `;
+    } else if (currentModulation === 'PSK') {
+      expDiv.innerHTML = `
+        <strong>Modulación por Conmutación de Fase (PSK):</strong><br>
+        Varía el <strong>inicio de la onda (fase)</strong>. Para la secuencia <code>${bitStr}</code>: 
+        el bit <strong>1</strong> mantiene la fase normal (0°), mientras que el bit <strong>0</strong> invierte la onda 180° generando un cambio brusco de sentido.
+      `;
+    } else if (currentModulation === 'QAM') {
+      const sym1 = `${dataBits[0]}${dataBits[1]}`;
+      const sym2 = `${dataBits[2]}${dataBits[3]}`;
+      expDiv.innerHTML = `
+        <strong>Modulación de Amplitud en Cuadratura (QAM):</strong><br>
+        Combina cambios de <strong>Amplitud y Fase al mismo tiempo</strong> para transmitir varios bits por símbolo. 
+        Tus 4 bits se agrupan en 2 símbolos: <code>${sym1}</code> y <code>${sym2}</code>. Cada pareja cambia tanto la altura (amplitud) como el desfase de la onda, logrando transportar más datos en menos tiempo.
+      `;
+    }
+  }
+
+  window.addEventListener('resize', render);
+  render();
+</script>
+
+</div>
+</body>
+</html>

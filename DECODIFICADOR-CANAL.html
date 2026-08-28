@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Decodificador de Canal</title>
+  <style>
+    :root {
+      --primary-color: #6366f1; /* Índigo para decodificación */
+      --tx-color: #059669;      /* Verde para transmisión original */
+      --rx-color: #0284c7;      /* Azul para datos recibidos */
+      --rx-bg: #e0f2fe;
+      --error-color: #dc2626;   /* Rojo para ruido / errores */
+      --error-bg: #fee2e2;
+      --k-color: #2563eb;       /* Azul para datos de salida recuperados */
+      --k-bg: #dbeafe;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h2 {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    /* Sección Transmisor */
+    .tx-panel {
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+    }
+
+    .preset-select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: white;
+      font-size: 0.9rem;
+      color: var(--text-color);
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* Sección Canal e Inyección de Ruido */
+    .channel-section {
+      background: #fff;
+      border: 2px dashed #cbd5e1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .channel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .interactive-bits {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .bit-interactive-btn {
+      width: 48px;
+      height: 55px;
+      border: 2px solid var(--rx-color);
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .bit-interactive-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .bit-interactive-btn .bit-val {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--rx-color);
+    }
+
+    .bit-interactive-btn .bit-idx {
+      font-size: 0.7rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .bit-interactive-btn.corrupted {
+      border-color: var(--error-color);
+      background: var(--error-bg);
+      animation: pulse 1.5s infinite;
+    }
+
+    .bit-interactive-btn.corrupted .bit-val {
+      color: var(--error-color);
+    }
+
+    .bit-interactive-btn.corrupted::after {
+      content: '⚡ RUIDO';
+      position: absolute;
+      top: -10px;
+      background: var(--error-color);
+      color: white;
+      font-size: 0.6rem;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+
+    /* Diagrama de Decodificación */
+    .diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 20px 0;
+      gap: 8px;
+    }
+
+    .diagram-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+    }
+
+    .decoder-box {
+      background: #312e81;
+      color: white;
+      padding: 15px 10px;
+      border-radius: 8px;
+      text-align: center;
+      width: 100%;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .decoder-box .title {
+      font-weight: bold;
+      font-size: 1.05rem;
+    }
+
+    .decoder-box .subtitle {
+      font-size: 0.8rem;
+      color: #c7d2fe;
+      margin-top: 2px;
+    }
+
+    .arrow {
+      font-size: 1.3rem;
+      color: #94a3b8;
+      font-weight: bold;
+    }
+
+    .bit-tag {
+      display: flex;
+      gap: 3px;
+    }
+
+    .bit-box {
+      width: 24px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .bit-rx { background: var(--rx-bg); color: var(--rx-color); }
+    .bit-k { background: var(--k-bg); color: var(--k-color); }
+    .bit-err { background: var(--error-bg); color: var(--error-color); font-weight: bold; }
+
+    /* Tarjetas de Resultado */
+    .breakdown-section {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .breakdown-section { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .diagram {
+        flex-direction: column;
+      }
+      .diagram-node { min-width: 0; width: 100%; }
+      .diagram .arrow { transform: rotate(90deg); }
+      .bit-tag { flex-wrap: wrap; justify-content: center; }
+      .panel-header { flex-direction: column; align-items: stretch; gap: 8px; }
+      .preset-select { max-width: 100%; width: 100%; }
+    }
+
+    .card {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-rx { background: #f0f9ff; border-color: #bae6fd; }
+    .card-syn { background: #fff1f2; border-color: #fecdd3; }
+    .card-out { background: #eff6ff; border-color: #bfdbfe; }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .card-rx .card-title { color: var(--rx-color); }
+    .card-syn .card-title { color: var(--error-color); }
+    .card-out .card-title { color: var(--k-color); }
+
+    .card-value {
+      font-family: monospace;
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .status-ok { background: #dcfce7; color: #15803d; }
+    .status-corrected { background: #fef3c7; color: #b45309; }
+    .status-error { background: #fee2e2; color: #b91c1c; }
+
+    /* Explicación Dinámica */
+    .explanation-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .explanation-box strong {
+      color: var(--primary-color);
+    }
+  
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+.page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html" class="active">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+<div class="container">
+  <header>
+    <h2>Decodificador de Canal Hamming (7,4)</h2>
+    <p>Simulador interactivo de inyección de ruido y corrección por Síndrome</p>
+  </header>
+
+  <!-- Transmisor Previo -->
+  <div class="tx-panel">
+    <div class="panel-header">
+      <span class="panel-title">1. Emisión del Transmisor (Palabra Válida)</span>
+      <select class="preset-select" id="txPresetSelect" onchange="changeTxPreset(this.value)">
+        <option value="1011">Datos k = 1011 → Enviado: 1011010</option>
+        <option value="0000">Datos k = 0000 → Enviado: 0000000</option>
+        <option value="1111">Datos k = 1111 → Enviado: 1111111</option>
+        <option value="0101">Datos k = 0101 → Enviado: 0101101</option>
+      </select>
+    </div>
+    <div style="font-size: 0.85rem; color: #475569;">
+      Palabra codificada enviada al canal: <code id="tx-codeword-text" style="font-weight: bold; color: var(--tx-color);">1011010</code>
+    </div>
+  </div>
+
+  <!-- Interacción con el Canal: Inyección de Ruido -->
+  <div class="channel-section">
+    <div class="channel-title">⚡ 2. Canal de Transmisión (Haz clic en un bit para alterar/invertir su valor)</div>
+    <div class="interactive-bits" id="channel-bits-container">
+      <!-- Generado dinámicamente -->
+    </div>
+  </div>
+
+  <!-- Diagrama del Decodificador -->
+  <div class="diagram">
+    <div class="diagram-node">
+      <span style="font-size: 0.8rem; font-weight: bold; color: var(--rx-color);">Recibido r (n = 7)</span>
+      <div class="bit-tag" id="input-display"></div>
+    </div>
+
+    <div class="arrow">&rarr;</div>
+
+    <div class="diagram-node" style="flex: 1.2;">
+      <div class="decoder-box">
+        <div class="title">Decodificador (7,4)</div>
+        <div class="subtitle">Calcula Síndrome S = r · Hᵀ</div>
+      </div>
+    </div>
+
+    <div class="arrow">&rarr;</div>
+
+    <div class="diagram-node">
+      <span style="font-size: 0.8rem; font-weight: bold; color: var(--k-color);">Salida k̂ (k = 4)</span>
+      <div class="bit-tag" id="output-display"></div>
+    </div>
+  </div>
+
+  <!-- Desglose de Resultados -->
+  <div class="breakdown-section">
+    <div class="card card-rx">
+      <span class="card-title">Vector Recibido (r)</span>
+      <span class="card-value" id="val-r">1011010</span>
+      <span style="font-size: 0.75rem; color: #64748b;">7 Bits del Canal</span>
+    </div>
+
+    <div class="card card-syn">
+      <span class="card-title">Vector Síndrome (S)</span>
+      <span class="card-value" id="val-s">000</span>
+      <div id="status-badge-container"></div>
+    </div>
+
+    <div class="card card-out">
+      <span class="card-title">Información Recibida (k̂)</span>
+      <span class="card-value" id="val-k">1011</span>
+      <span style="font-size: 0.75rem; color: #64748b;">4 Bits Recuperados</span>
+    </div>
+  </div>
+
+  <!-- Explicación Dinámica -->
+  <div class="explanation-box" id="explanation">
+    Cargando explicación...
+  </div>
+</div>
+
+<script>
+  let currentK = [1, 0, 1, 1];
+  let originalCodeword = [];
+  let channelBits = [];
+
+  // Calcular bits de paridad para el código Hamming(7,4)
+  function computeCodeword(k) {
+    const [b0, b1, b2, b3] = k;
+    const p1 = b0 ^ b1 ^ b3;
+    const p2 = b0 ^ b2 ^ b3;
+    const p3 = b1 ^ b2 ^ b3;
+    return [b0, b1, b2, b3, p1, p2, p3];
+  }
+
+  function changeTxPreset(kStr) {
+    currentK = kStr.split('').map(Number);
+    originalCodeword = computeCodeword(currentK);
+    channelBits = [...originalCodeword]; // Limpiar errores al cambiar patrón de origen
+    document.getElementById('tx-codeword-text').textContent = originalCodeword.join('');
+    processAndRender();
+  }
+
+  function toggleChannelBit(idx) {
+    // Invertir bit por acción del usuario (simulando ruido)
+    channelBits[idx] = channelBits[idx] === 1 ? 0 : 1;
+    processAndRender();
+  }
+
+  function renderChannelInteractive() {
+    const container = document.getElementById('channel-bits-container');
+    container.innerHTML = '';
+    const labels = ['b₀', 'b₁', 'b₂', 'b₃', 'p₁', 'p₂', 'p₃'];
+
+    channelBits.forEach((bit, idx) => {
+      const isCorrupted = bit !== originalCodeword[idx];
+      const btn = document.createElement('div');
+      btn.className = `bit-interactive-btn ${isCorrupted ? 'corrupted' : ''}`;
+      btn.onclick = () => toggleChannelBit(idx);
+      btn.innerHTML = `
+        <span class="bit-val">${bit}</span>
+        <span class="bit-idx">${labels[idx]} (${idx+1})</span>
+      `;
+      container.appendChild(btn);
+    });
+  }
+
+  function processAndRender() {
+    renderChannelInteractive();
+    const [r0, r1, r2, r3, rp1, rp2, rp3] = channelBits;
+
+    // CÁLCULO DEL SÍNDROME S = [s1, s2, s3]
+    const s1 = r0 ^ r1 ^ r3 ^ rp1;
+    const s2 = r0 ^ r2 ^ r3 ^ rp2;
+    const s3 = r1 ^ r2 ^ r3 ^ rp3;
+
+    const sStr = `${s1}${s2}${s3}`;
+    const rStr = channelBits.join('');
+
+    // Matriz de descodificación: Mapeo del Síndrome a la posición errónea (1 a 7)
+    let errorIndex = -1; // 0-indexed
+    if (s1 === 1 && s2 === 1 && s3 === 0) errorIndex = 0;      // Posición 1: r0 (b0)
+    else if (s1 === 1 && s2 === 0 && s3 === 1) errorIndex = 1; // Posición 2: r1 (b1)
+    else if (s1 === 0 && s2 === 1 && s3 === 1) errorIndex = 2; // Posición 3: r2 (b2)
+    else if (s1 === 1 && s2 === 1 && s3 === 1) errorIndex = 3; // Posición 4: r3 (b3)
+    else if (s1 === 1 && s2 === 0 && s3 === 0) errorIndex = 4; // Posición 5: rp1
+    else if (s1 === 0 && s2 === 1 && s3 === 0) errorIndex = 5; // Posición 6: rp2
+    else if (s1 === 0 && s2 === 0 && s3 === 1) errorIndex = 6; // Posición 7: rp3
+
+    // Contar cuántos errores se han introducido manualmente
+    let corruptedCount = 0;
+    channelBits.forEach((val, i) => {
+      if (val !== originalCodeword[i]) corruptedCount++;
+    });
+
+    // Acción del Decodificador: Corregir si se detecta un síndrome no nulo
+    let correctedBits = [...channelBits];
+    if (errorIndex !== -1) {
+      correctedBits[errorIndex] = correctedBits[errorIndex] === 1 ? 0 : 1;
+    }
+
+    // Extraer datos recuperados (los primeros 4 bits)
+    const extractedK = correctedBits.slice(0, 4).join('');
+
+    // Actualizar elementos visuales pequeños
+    const inputItems = channelBits.map((v, idx) => ({ 
+      v, 
+      type: (v !== originalCodeword[idx]) ? 'err' : 'rx' 
+    }));
+    const outputItems = correctedBits.slice(0, 4).map(v => ({ v, type: 'k' }));
+
+    renderBitBoxes('input-display', inputItems);
+    renderBitBoxes('output-display', outputItems);
+
+    // Actualizar etiquetas
+    document.getElementById('val-r').textContent = rStr;
+    document.getElementById('val-s').textContent = sStr;
+    document.getElementById('val-k').textContent = extractedK;
+
+    // Indicador de Estado
+    const badgeContainer = document.getElementById('status-badge-container');
+    if (sStr === "000" && corruptedCount === 0) {
+      badgeContainer.innerHTML = '<span class="status-badge status-ok">✓ Sin Errores</span>';
+    } else if (corruptedCount === 1 && errorIndex !== -1) {
+      badgeContainer.innerHTML = `<span class="status-badge status-corrected">⚠ Error Corregido (Bit ${errorIndex + 1})</span>`;
+    } else if (corruptedCount > 1) {
+      badgeContainer.innerHTML = '<span class="status-badge status-error">✕ Error Múltiple No Corregible</span>';
+    } else {
+      badgeContainer.innerHTML = '<span class="status-badge status-corrected">⚠ Síndrome Activo</span>';
+    }
+
+    // Actualizar la explicación pedagógica
+    updateExplanation(rStr, s1, s2, s3, sStr, errorIndex, extractedK, corruptedCount);
+  }
+
+  function renderBitBoxes(elementId, items) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = '';
+    items.forEach(item => {
+      const box = document.createElement('div');
+      box.className = `bit-box bit-${item.type}`;
+      box.textContent = item.v;
+      container.appendChild(box);
+    });
+  }
+
+  function updateExplanation(rStr, s1, s2, s3, sStr, errorIndex, extractedK, corruptedCount) {
+    const expDiv = document.getElementById('explanation');
+    const origKStr = currentK.join('');
+
+    if (corruptedCount === 0 && sStr === "000") {
+      expDiv.innerHTML = `
+        <strong>Señal Limpia Recibida:</strong> La palabra <code>${rStr}</code> llegó al receptor sin interferencias.<br>
+        El decodificador calcula el <strong>Síndrome S = [0, 0, 0]</strong>, confirmando que las verificaciones de paridad concuerdan. Se extraen directamente los 4 bits de datos: <code>${extractedK}</code> (Coincide perfectamente con los bits originales <code>${origKStr}</code>).
+      `;
+    } else if (corruptedCount === 1 && errorIndex !== -1) {
+      const labels = ['b₀ (Información)', 'b₁ (Información)', 'b₂ (Información)', 'b₃ (Información)', 'p₁ (Paridad)', 'p₂ (Paridad)', 'p₃ (Paridad)'];
+      expDiv.innerHTML = `
+        <strong>Error de 1 Bit Detectado y Corregido:</strong> Alteraste el bit en la <strong>posición ${errorIndex + 1} (${labels[errorIndex]})</strong>.<br>
+        El decodificador evalúa la matriz de comprobación de paridad y obtiene el <strong>Síndrome S = [${s1}, ${s2}, ${s3}] = ${sStr}</strong>.<br>
+        Este patrón de Síndrome apunta unívocamente a la posición ${errorIndex + 1}. El decodificador <strong>invierte ese bit</strong> ($0 \\leftrightarrow 1$) y extrae los datos originales recuperados sin pérdidas: <code>${extractedK}</code>.
+      `;
+    } else if (corruptedCount > 1) {
+      expDiv.innerHTML = `
+        <strong>Múltiples Errores Inyectados (${corruptedCount} bits alterados):</strong> Superaste la capacidad de corrección del código.<br>
+        El código Hamming (7,4) tiene una distancia mínima $d_{min} = 3$, permitiendo <strong>corregir solo 1 error por bloque</strong>. Al inyectar múltiples errores, el decodificador intentará reparar el bit incorrecto o producirá datos decodificados erróneos (<code>${extractedK}</code>).
+      `;
+    }
+  }
+
+  // Inicialización
+  originalCodeword = computeCodeword(currentK);
+  channelBits = [...originalCodeword];
+  processAndRender();
+</script>
+
+</div>
+</body>
+</html>

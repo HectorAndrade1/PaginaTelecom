@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<title>TELE II — Cadena de Comunicación Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;
+  --panel:#ffffff;
+  --panel2:#eef2f7;
+  --line:#e2e8f0;
+  --line-soft:#e8edf3;
+  --amber:#1a73e8;
+  --amber-glow: rgba(26,115,232,0.35);
+  --cyan:#0ea5e9;
+  --green:#059669;
+  --red:#dc2626;
+  --text:#1e293b;
+  --text-dim:#64748b;
+  --text-faint:#94a3b8;
+  --mono:'IBM Plex Mono',monospace;
+  --disp:'Space Grotesk',sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);}
+body{padding-bottom:40px;}
+.wrap{max-width:1320px;margin:0 auto;padding:26px 18px 0;}
+
+/* ===== SHARED NAV (matches the rest of the site) ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+/* ===== END SHARED NAV ===== */
+
+header.page-header{text-align:center; margin-bottom:20px;}
+.eyebrow{font-size:12px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber-glow);animation:pulse 1.8s infinite ease-in-out;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(24px,3.7vw,32px);margin:0 0 6px;}
+.subtitle{color:var(--text-dim);font-size:14px;max-width:620px;margin:0 auto;line-height:1.5;}
+
+/* controls */
+.controls{
+  display:flex; align-items:center; justify-content:center; gap:26px; flex-wrap:wrap;
+  background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+  border-radius:12px; padding:16px 22px; margin:22px 0 30px;
+}
+.ctrl{display:flex; align-items:center; gap:10px;}
+.ctrl label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+.seg{display:flex; gap:6px;}
+.seg button{
+  background:var(--panel2); border:1px solid var(--line); color:var(--text-dim);
+  padding:8px 13px; border-radius:7px; font-family:var(--mono); font-size:13px; cursor:pointer; transition:.15s;
+}
+.seg button:hover{color:var(--text); border-color:#4a5a68;}
+.seg button.active{background:rgba(26,115,232,0.12); border-color:var(--amber); color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset;}
+input[type=range]{accent-color:var(--amber); width:140px;}
+.noise-val{font-size:13px; color:var(--cyan); min-width:70px;}
+
+/* ===== C-shape layout ===== */
+.cshape{
+  display:grid;
+  grid-template-columns: max-content 132px;
+  grid-template-rows: auto auto;
+  row-gap:26px; column-gap:10px;
+  width:max-content; margin:0 auto;
+}
+.row-top{ grid-column:1; grid-row:1; display:flex; align-items:center; justify-content:flex-end; }
+.row-bottom{ grid-column:1; grid-row:2; display:flex; align-items:center; justify-content:flex-start; transform:scaleX(-1); }
+/* un-mirror content so text/canvas stay readable, while position stays mirrored */
+.row-bottom .block, .row-bottom .group-label, .row-bottom .salida-label{ transform:scaleX(-1); }
+
+.canal-rail{
+  grid-column:2; grid-row:1/3;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+}
+.vline{ width:2px; min-height:26px; flex:1; background:var(--line); position:relative; }
+.vline::after{ content:''; position:absolute; left:50%; bottom:-1px; transform:translateX(-50%); border:4px solid transparent; border-top-color:var(--line); border-bottom:0; }
+.flow-dot-v{ position:absolute; left:50%; top:0; width:6px; height:6px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px var(--amber-glow); transform:translateX(-50%); animation:flowv 1.6s linear infinite; }
+@keyframes flowv{ from{top:0; opacity:0;} 8%{opacity:1;} 92%{opacity:1;} to{top:100%; opacity:0;} }
+
+.arrow-out{ display:flex; align-items:center; gap:6px; margin-left:2px; }
+.arrow-out .stick{ width:26px; height:2px; background:var(--line); position:relative; }
+.arrow-out .stick::after{ content:''; position:absolute; left:-1px; top:-3px; border:4px solid transparent; border-right-color:var(--line); border-left:0; }
+.salida-label{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); white-space:nowrap; }
+
+/* diagram */
+.diagram{position:relative; padding:10px 4px 22px; overflow-x:auto; overflow-y:hidden;}
+.diagram::-webkit-scrollbar{height:8px;}
+.diagram::-webkit-scrollbar-track{background:var(--panel2); border-radius:6px;}
+.diagram::-webkit-scrollbar-thumb{background:var(--line); border-radius:6px;}
+.diagram::-webkit-scrollbar-thumb:hover{background:var(--amber-dim, #60a5fa);}
+.scroll-hint{display:none; text-align:center; font-size:11px; color:var(--text-faint); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px;}
+.row{display:flex; align-items:stretch; gap:0; justify-content:flex-start; flex-wrap:nowrap; width:max-content; margin:0 auto;}
+.node{display:flex; align-items:center;}
+.arrow{
+  width:34px; min-width:20px; height:2px; background:linear-gradient(90deg,var(--line),var(--line));
+  position:relative; align-self:center; margin:0 -1px;
+}
+.arrow::after{content:'';position:absolute; right:-1px; top:-3px; border:4px solid transparent; border-left-color:var(--line); border-right:0;}
+.flow-dot{
+  position:absolute; top:50%; left:0; width:6px; height:6px; border-radius:50%;
+  background:var(--amber); box-shadow:0 0 8px var(--amber-glow); transform:translateY(-50%);
+  animation:flow 1.6s linear infinite;
+}
+@keyframes flow{ from{left:0; opacity:0;} 8%{opacity:1;} 92%{opacity:1;} to{left:100%; opacity:0;} }
+
+.group{
+  border:1px dashed var(--line); border-radius:12px; padding:14px 10px 22px; position:relative;
+  display:flex; gap:8px;
+}
+.group.tx{border-color:rgba(14,165,233,0.28);}
+.group.rx{border-color:rgba(26,115,232,0.28);}
+.group-label{position:absolute; bottom:5px; left:50%; transform:translateX(-50%); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-faint); white-space:nowrap;}
+
+.block{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px;
+  width:150px; text-align:center; transition:border-color .2s, box-shadow .2s;
+  box-shadow:0 2px 8px rgba(15,23,42,0.05);
+}
+.block:hover{border-color:var(--amber); box-shadow:0 0 20px -8px var(--amber-glow);}
+.block canvas{width:100%; height:60px; display:block; background:var(--panel2); border:1px solid var(--line-soft); border-radius:6px; margin-bottom:7px;}
+.block .name{font-family:var(--disp); font-weight:600; font-size:13px; color:var(--text); margin-bottom:3px;}
+.block .cap{font-size:11px; color:var(--text-faint); line-height:1.35;}
+.block.canal-block{background:var(--panel); border-color:rgba(220,38,38,0.35);}
+.block.canal-block .name{color:var(--red);}
+
+/* clickable blocks link to their own page */
+.block.linkable{ cursor:pointer; }
+.block.linkable:hover{ border-color:var(--cyan); box-shadow:0 0 20px -6px rgba(14,165,233,0.45); }
+.block.linkable:hover .name{ color:var(--cyan); }
+.block.linkable:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+.block.linkable .go{
+  display:block; margin-top:5px; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-faint); opacity:0; transition:opacity .15s, color .15s;
+}
+.block.linkable:hover .go{ opacity:1; color:var(--cyan); }
+
+.legend{display:flex; justify-content:center; gap:22px; margin-top:26px; flex-wrap:wrap;}
+.legend .item{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-dim);}
+.legend .sw{width:14px; height:3px; border-radius:2px;}
+
+footer{text-align:center; color:var(--text-faint); font-size:11px; margin-top:34px; letter-spacing:.05em;}
+
+@media (max-width:900px){
+  .block{width:128px;}
+  .scroll-hint{display:block;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html" class="active">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+
+</ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="page-header">
+  <div class="eyebrow"><span class="dot"></span>Cadena de comunicación digital</div>
+  <h1>De la señal original a la señal recibida</h1>
+  <p class="subtitle">Haz clic en cualquier bloque del transmisor o del receptor para abrir su simulación interactiva.</p>
+</header>
+
+<div class="controls">
+  <div class="ctrl">
+    <label>Señal</label>
+    <div class="seg" id="sig-seg">
+      <button data-sig="voz" class="active">🎙 Voz</button>
+      <button data-sig="imagen">🖼 Imagen</button>
+      <button data-sig="sensor">🌡 Sensor</button>
+      <button data-sig="audio">🎵 Audio</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label>Ruido del canal</label>
+    <input type="range" id="noise" min="0" max="100" value="20">
+    <span class="noise-val" id="noise-val">10% de probabilidad de error por bit</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="scroll-hint">← desliza para ver toda la cadena →</div>
+  <div class="cshape">
+
+    <div class="row-top">
+      <div class="block">
+        <canvas id="cv0"></canvas>
+        <div class="name">Fuente de<br>información</div>
+        <div class="cap">Señal original</div>
+      </div>
+      <div class="arrow"><div class="flow-dot" style="animation-delay:0s"></div></div>
+
+      <div class="group tx">
+        <div class="block linkable" data-href="CODIFICADOR-FUENTE.html" role="link" tabindex="0">
+          <canvas id="cv1"></canvas>
+          <div class="name">Codificador<br>de fuente</div>
+          <div class="cap">Se muestrea y digitaliza</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="arrow"><div class="flow-dot" style="animation-delay:.2s"></div></div>
+        <div class="block linkable" data-href="CODIFICADOR-CANAL.html" role="link" tabindex="0">
+          <canvas id="cv2"></canvas>
+          <div class="name">Codificador<br>de canal</div>
+          <div class="cap">Se añaden bits de protección</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="arrow"><div class="flow-dot" style="animation-delay:.4s"></div></div>
+        <div class="block linkable" data-href="MODULADOR-DIGITAL.html" role="link" tabindex="0">
+          <canvas id="cv3"></canvas>
+          <div class="name">Modulador<br>digital</div>
+          <div class="cap">Los bits se convierten en onda</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="group-label">Transmisor</div>
+      </div>
+    </div>
+
+    <div class="canal-rail">
+      <div class="vline"><div class="flow-dot-v" style="animation-delay:.6s"></div></div>
+      <div class="block canal-block linkable" data-href="CANAL.html" role="link" tabindex="0">
+        <canvas id="cv4"></canvas>
+        <div class="name">Canal</div>
+        <div class="cap" id="cap-canal">El ruido puede alterar la señal</div>
+        <span class="go">Abrir simulación →</span>
+      </div>
+      <div class="vline"><div class="flow-dot-v" style="animation-delay:.9s"></div></div>
+    </div>
+
+    <div class="row-bottom">
+      <div class="group rx">
+        <div class="block linkable" data-href="DEMODULADOR-DIGITAL.html" role="link" tabindex="0">
+          <canvas id="cv5"></canvas>
+          <div class="name">Demodulador<br>digital</div>
+          <div class="cap" id="cap-demod">Se recupera la onda de bits</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="arrow"><div class="flow-dot" style="animation-delay:1.1s"></div></div>
+        <div class="block linkable" data-href="DECODIFICADOR-CANAL.html" role="link" tabindex="0">
+          <canvas id="cv6"></canvas>
+          <div class="name">Decodificador<br>de canal</div>
+          <div class="cap" id="cap-deccanal">Se corrigen errores</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="arrow"><div class="flow-dot" style="animation-delay:1.3s"></div></div>
+        <div class="block linkable" data-href="DECODIFICADOR-FUENTE.html" role="link" tabindex="0">
+          <canvas id="cv7"></canvas>
+          <div class="name">Decodificador<br>de fuente</div>
+          <div class="cap">Se reconstruye la señal</div>
+          <span class="go">Abrir simulación →</span>
+        </div>
+        <div class="group-label">Receptor</div>
+      </div>
+      <div class="arrow"><div class="flow-dot" style="animation-delay:1.5s"></div></div>
+      <div class="block">
+        <canvas id="cv8"></canvas>
+        <div class="name">Transductor<br>de salida</div>
+        <div class="cap">Señal final entregada</div>
+      </div>
+      <div class="arrow-out"><div class="stick"></div><span class="salida-label">Salida</span></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <div class="item"><span class="sw" style="background:var(--amber)"></span>Señal analógica</div>
+  <div class="item"><span class="sw" style="background:var(--cyan)"></span>Señal digital / bits</div>
+  <div class="item"><span class="sw" style="background:var(--red)"></span>Error introducido por el ruido</div>
+</div>
+
+<footer>TELECOMUNICACIONES II &nbsp;·&nbsp; Sistema de Comunicación Digital</footer>
+
+</div>
+
+
+<script>
+/* ---------- señales de fuente ---------- */
+const SIGNALS = {
+  voz:    (t)=> 0.55*Math.sin(2*Math.PI*220*t) + 0.28*Math.sin(2*Math.PI*660*t+0.6) + 0.12*Math.sin(2*Math.PI*1800*t+1.1),
+  imagen: (t)=>{ const p=(t*6)%1; return Math.sign(Math.sin(2*Math.PI*3*t)) * (0.35+0.55*Math.abs(Math.sin(2*Math.PI*7*p))) * (p<0.5?1:0.6); },
+  sensor: (t)=> 0.5*Math.sin(2*Math.PI*0.8*t) + 0.08*Math.sin(2*Math.PI*9*t),
+  audio:  (t)=> 0.4*Math.sin(2*Math.PI*440*t) + 0.25*Math.sin(2*Math.PI*554*t) + 0.2*Math.sin(2*Math.PI*659*t)
+};
+let state = { sig:'voz', noise:20 };
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let rng = mulberry32(7);
+function gauss(){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ---------- canvas helpers ---------- */
+function setup(id){
+  const cv=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||140, h=cv.clientHeight||60;
+  cv.width=w*dpr; cv.height=h*dpr;
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  return {ctx,w,h};
+}
+function midline(ctx,w,h){ ctx.strokeStyle='rgba(15,23,42,0.10)'; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke(); }
+
+function drawAnalog(ctx,w,h,fn,color,amp){
+  midline(ctx,w,h);
+  ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.beginPath();
+  for(let x=0;x<=w;x++){
+    const t=x/w*0.02;
+    const y=h/2 - fn(t)*(amp||0.8)*(h/2-6);
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+function drawSampled(ctx,w,h,fn,color){
+  midline(ctx,w,h);
+  const n=16, step=w/n;
+  ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const t=(i/n)*0.02;
+    const v=Math.max(-1,Math.min(1,fn(t)));
+    const q=Math.round((v+1)/2*7)/7*2-1;
+    const x=i*step, y=h/2-q*0.8*(h/2-6);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  for(let i=0;i<=n;i++){
+    const t=(i/n)*0.02;
+    const v=Math.max(-1,Math.min(1,fn(t)));
+    const q=Math.round((v+1)/2*7)/7*2-1;
+    const x=i*step, y=h/2-q*0.8*(h/2-6);
+    ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,2,0,7); ctx.fill();
+  }
+}
+function bitsFromSignal(fn,n){
+  const bits=[];
+  for(let i=0;i<n;i++){ const t=(i/n)*0.02; bits.push(fn(t)>0?1:0); }
+  return bits;
+}
+function drawBits(ctx,w,h,bits,errSet){
+  const n=bits.length, cw=w/n;
+  bits.forEach((b,i)=>{
+    const err = errSet && errSet.has(i);
+    ctx.fillStyle = err ? 'rgba(220,38,38,0.85)' : (b? 'rgba(14,165,233,0.85)':'rgba(15,23,42,0.08)');
+    ctx.fillRect(i*cw+1.5, h*0.28, cw-3, h*0.44);
+  });
+}
+function drawCarrier(ctx,w,h,bits,color){
+  midline(ctx,w,h);
+  const n=bits.length, seg=w/n;
+  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.beginPath();
+  for(let x=0;x<=w;x++){
+    const bi=Math.min(n-1,Math.floor(x/seg));
+    const amp = 0.35+0.55*bits[bi];
+    const y = h/2 - Math.sin(x*0.9)*amp*(h/2-6);
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+function drawNoisyCarrier(ctx,w,h,bits,color,noiseLvl){
+  midline(ctx,w,h);
+  const n=bits.length, seg=w/n;
+  // "estática" de fondo, proporcional al ruido: hace visible el ruido incluso antes de mirar la onda
+  if(noiseLvl>0.01){
+    const dots = Math.round(noiseLvl*140);
+    for(let i=0;i<dots;i++){
+      ctx.fillStyle = 'rgba(220,38,38,'+(0.15+rng()*0.35)+')';
+      ctx.fillRect(rng()*w, rng()*h, 1.4, 1.4);
+    }
+  }
+  ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.beginPath();
+  for(let x=0;x<=w;x++){
+    const bi=Math.min(n-1,Math.floor(x/seg));
+    const amp = 0.35+0.55*bits[bi];
+    const noise = gauss()*noiseLvl*0.9;
+    const y = h/2 - (Math.sin(x*0.9)*amp+noise)*(h/2-6);
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+function corrupt(bits,p){
+  const errSet=new Set(); const out=bits.slice();
+  out.forEach((b,i)=>{ if(rng()<p){ out[i]=b^1; errSet.add(i);} });
+  return {out,errSet};
+}
+function correctErrors(bits,errSet,p){
+  // simulacion visual: corrige la mayoria de errores si p es bajo, deja algunos si p es alto
+  const out=bits.slice(); const fixed=new Set(); const residual=new Set();
+  errSet.forEach(i=>{ if(rng() > p*1.3){ out[i]=out[i]^1; fixed.add(i);} else residual.add(i); });
+  return {out, residual};
+}
+
+/* ---------- render ---------- */
+function render(){
+  rng = mulberry32(Math.floor(rng()*1e9)+1);
+  const fn = SIGNALS[state.sig];
+  const noiseLvl = state.noise/100;   // 0..1 — 0 = canal ideal, 1 = canal muy ruidoso
+  const p = noiseLvl*0.5;             // probabilidad de que el ruido invierta un bit (0% a 50%)
+
+  // 0 Fuente
+  { const {ctx,w,h}=setup('cv0'); drawAnalog(ctx,w,h,fn,'#1a73e8'); }
+
+  // 1 Codificador de fuente
+  { const {ctx,w,h}=setup('cv1'); drawSampled(ctx,w,h,fn,'#0ea5e9'); }
+
+  // bits base (16) para las siguientes etapas
+  const bits = bitsFromSignal(fn,16);
+  const codedBits = bits.concat(bits.slice(0,6)); // simula bits de paridad añadidos
+
+  // 2 Codificador de canal
+  { const {ctx,w,h}=setup('cv2'); drawBits(ctx,w,h,codedBits); }
+
+  // 3 Modulador
+  { const {ctx,w,h}=setup('cv3'); drawCarrier(ctx,w,h,codedBits,'#0ea5e9'); }
+
+  // 4 Canal (ruido)
+  { const {ctx,w,h}=setup('cv4'); drawNoisyCarrier(ctx,w,h,codedBits,'#1a73e8',noiseLvl); }
+  document.getElementById('cap-canal').textContent = noiseLvl<0.02
+    ? 'Canal limpio, sin ruido' : 'Estática = ruido sumado a la señal';
+
+  // 5 Demodulador -> bits recibidos con errores
+  const {out:rxBits, errSet} = corrupt(codedBits, p);
+  { const {ctx,w,h}=setup('cv5'); drawBits(ctx,w,h,rxBits,errSet); }
+  document.getElementById('cap-demod').textContent = errSet.size
+    ? errSet.size+' de '+rxBits.length+' bits llegaron alterados' : 'Todos los bits llegaron correctos';
+
+  // 6 Decodificador de canal -> corrige errores
+  const {out:fixedBits, residual} = correctErrors(rxBits, errSet, noiseLvl);
+  { const {ctx,w,h}=setup('cv6'); drawBits(ctx,w,h,fixedBits,residual); }
+  document.getElementById('cap-deccanal').textContent = errSet.size===0
+    ? 'Nada que corregir'
+    : (residual.size===0
+        ? 'Los '+errSet.size+' errores se corrigieron'
+        : residual.size+' de '+errSet.size+' errores no se pudieron corregir');
+
+  // 7 Decodificador de fuente -> reconstruye onda (con distorsión leve si quedan errores)
+  { const {ctx,w,h}=setup('cv7');
+    midline(ctx,w,h);
+    ctx.strokeStyle='#0ea5e9'; ctx.lineWidth=1.6; ctx.beginPath();
+    const n=16, step=w/n;
+    for(let i=0;i<=n;i++){
+      const t=(i/n)*0.02;
+      let v=Math.max(-1,Math.min(1,fn(t)));
+      let q=Math.round((v+1)/2*7)/7*2-1;
+      if(residual.size && rng()<0.4) q += (rng()-0.5)*0.6;
+      const x=i*step, y=h/2-q*0.8*(h/2-6);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // 8 Transductor de salida -> original vs recuperado
+  { const {ctx,w,h}=setup('cv8'); midline(ctx,w,h);
+    ctx.strokeStyle='rgba(26,115,232,0.5)'; ctx.lineWidth=1.4; ctx.beginPath();
+    for(let x=0;x<=w;x++){ const t=x/w*0.02; const y=h/2-fn(t)*0.8*(h/2-6); x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();
+    ctx.strokeStyle='#059669'; ctx.lineWidth=1.3; ctx.setLineDash([3,2]); ctx.beginPath();
+    for(let x=0;x<=w;x++){
+      const t=x/w*0.02; let v=fn(t);
+      if(rng()<noiseLvl*0.25) v += (rng()-0.5)*0.5;
+      const y=h/2-v*0.8*(h/2-6);
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+/* ---------- eventos ---------- */
+document.getElementById('sig-seg').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#sig-seg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.sig=b.dataset.sig; render();
+});
+document.getElementById('noise').addEventListener('input', e=>{
+  state.noise = +e.target.value;
+  const pctErr = Math.round(state.noise*0.5);
+  document.getElementById('noise-val').textContent = state.noise===0
+    ? 'Canal ideal (0% error)' : pctErr+'% de probabilidad de error por bit';
+  render();
+});
+
+/* ---------- navegación: cada bloque lleva a su página ---------- */
+document.querySelectorAll('.block.linkable[data-href]').forEach(block => {
+  const go = () => { window.location.href = block.dataset.href; };
+  block.addEventListener('click', go);
+  block.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+  });
+});
+
+render();
+setInterval(render, 2600);
+</script>
+</body>
+</html>

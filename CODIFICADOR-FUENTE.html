@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Codificador de Fuente</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 0;
+      background: #f8f9fa;
+      margin: 0;
+    }
+    .page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      border-top: 6px solid #1a73e8;
+    }
+    h2 {
+      color: #1a73e8;
+      margin-top: 0;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    .controls {
+      background: #f1f3f4;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #3c4043;
+    }
+    input[type="range"] {
+      cursor: pointer;
+    }
+    .binary-container {
+      background: #202124;
+      color: #34a853;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-family: 'Courier New', Courier, monospace;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .binary-title {
+      color: #9aa0a6;
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .binary-stream {
+      font-size: 1.2rem;
+      font-weight: bold;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .bit-group {
+      color: #8ab4f8;
+      margin-right: 6px;
+      display: inline-block;
+    }
+
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+/* ===== END SHARED NAV ===== */
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html" class="active">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+  <div class="card">
+    <h2>Conversión Analógico a Digital (ADC) Integrada</h2>
+
+    <!-- Controles interactivos -->
+    <div class="controls">
+      <div class="control-group">
+        <label for="sampleRate">1. Muestreo (Muestras/Ciclo): <span id="rateVal" style="color:#1a73e8;">12</span></label>
+        <input type="range" id="sampleRate" min="6" max="24" value="12" step="2" oninput="updateProcess()">
+      </div>
+      <div class="control-group">
+        <label for="levels">2. Cuantificación (Niveles): <span id="levelVal" style="color:#f9ab00;">8</span></label>
+        <input type="range" id="levels" min="4" max="16" value="8" step="4" oninput="updateProcess()">
+      </div>
+    </div>
+
+    <!-- Gráfico unificado -->
+    <canvas id="adcChart" height="130"></canvas>
+
+    <!-- Salida en tiempo real de Codificación -->
+    <div class="binary-container">
+      <div class="binary-title">3. Codificación (Trama de Bits PCM Generada en Tiempo Real):</div>
+      <div id="binaryStream" class="binary-stream">Cargando...</div>
+    </div>
+  </div>
+
+  <script>
+    let adcChart;
+
+    function processADC(sampleRate, numLevels) {
+      let continuousSignal = [];
+      let sampledPoints = [];
+      let quantizedSignal = [];
+      let binaryStreamHTML = "";
+
+      // Número de bits necesarios según los niveles (ej. 8 niveles = 3 bits)
+      let bitsPerSample = Math.log2(numLevels);
+      let stepSize = 2 / (numLevels - 1); // Rango de la onda de -1 a 1 (Total = 2)
+
+      let sampleInterval = Math.round(360 / sampleRate);
+
+      for (let t = 0; t <= 360; t += 2) {
+        let rad = t * Math.PI / 180;
+        let val = Math.sin(rad); // Onda analógica original
+        continuousSignal.push({x: t, y: val});
+
+        // En los puntos de muestreo
+        if (t % sampleInterval === 0) {
+          sampledPoints.push({x: t, y: val});
+
+          // Calcular el nivel cuantificado (escalón)
+          let levelIndex = Math.round((val + 1) / stepSize);
+          let qVal = (levelIndex * stepSize) - 1;
+          quantizedSignal.push({x: t, y: qVal});
+
+          // Convertir el nivel a código binario
+          let binaryCode = levelIndex.toString(2).padStart(bitsPerSample, '0');
+          binaryStreamHTML += `<span class="bit-group">${binaryCode}</span>`;
+        }
+      }
+
+      return { continuousSignal, sampledPoints, quantizedSignal, binaryStreamHTML };
+    }
+
+    function initADCChart() {
+      const ctx = document.getElementById('adcChart').getContext('2d');
+      const data = processADC(12, 8);
+
+      document.getElementById('binaryStream').innerHTML = data.binaryStreamHTML;
+
+      adcChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'Señal Analógica Continua',
+              data: data.continuousSignal,
+              borderColor: '#1a73e8',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Señal Cuantificada (Escalones)',
+              data: data.quantizedSignal,
+              borderColor: '#f9ab00',
+              borderWidth: 2,
+              stepped: 'before',
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'Muestras Tomadas',
+              data: data.sampledPoints,
+              borderColor: '#d93025',
+              backgroundColor: '#d93025',
+              pointRadius: 5,
+              showLine: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { intersect: false, mode: 'index' },
+          scales: {
+            x: { type: 'linear', title: { display: true, text: 'Tiempo / Fase (°)' } },
+            y: { min: -1.2, max: 1.2, title: { display: true, text: 'Amplitud (V)' } }
+          }
+        }
+      });
+    }
+
+    function updateProcess() {
+      let sampleRate = parseInt(document.getElementById('sampleRate').value);
+      let levels = parseInt(document.getElementById('levels').value);
+
+      document.getElementById('rateVal').innerText = sampleRate;
+      document.getElementById('levelVal').innerText = levels;
+
+      let newData = processADC(sampleRate, levels);
+
+      adcChart.data.datasets[0].data = newData.continuousSignal;
+      adcChart.data.datasets[1].data = newData.quantizedSignal;
+      adcChart.data.datasets[2].data = newData.sampledPoints;
+      adcChart.update();
+
+      document.getElementById('binaryStream').innerHTML = newData.binaryStreamHTML;
+    }
+
+    window.onload = initADCChart;
+  </script>
+
+</div>
+</body>
+</html>

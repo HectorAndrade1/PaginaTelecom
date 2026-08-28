@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+  <title>TELE II — Demodulador Digital</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --rx-color: #dc2626;      /* Rojo: Onda con ruido del canal */
+      --filter-color: #059669;  /* Verde: Onda filtrada y recuperada */
+      --digital-color: #2563eb; /* Azul: Bits finales recuperados */
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h2 {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    /* Panel de Control */
+    .control-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 550px) {
+      .control-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+    }
+
+    .mod-selector {
+      display: flex;
+      gap: 6px;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 6px;
+    }
+
+    .mod-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      color: #475569;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mod-btn.active {
+      background: white;
+      color: var(--primary-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type=range] {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .val-display {
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: var(--rx-color);
+      min-width: 45px;
+    }
+
+    /* Flujo de Pasos Visuales */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 20px;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      color: white;
+    }
+
+    .step-box {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px 5px;
+      text-align: center;
+    }
+
+    .step-box .num {
+      font-size: 0.75rem;
+      color: var(--primary-color);
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .step-box .txt {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .arrow-pipe {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    /* Stack de Gráficas */
+    .canvas-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .graph-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .graph-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    canvas {
+      width: 100%;
+      height: 130px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      display: block;
+    }
+
+    /* Explicación */
+    .explanation-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: #334155;
+    }
+
+    .explanation-box strong {
+      color: var(--primary-color);
+    }
+  
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+.page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html" class="active">Demodulador</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+<div class="container">
+  <header>
+    <h2>Demodulador Digital</h2>
+    <p>Proceso paso a paso para recuperar los bits originales desde la señal del canal</p>
+  </header>
+
+  <!-- Panel de Control -->
+  <div class="control-panel">
+    <div class="control-group">
+      <label>Técnica a Demodular:</label>
+      <div class="mod-selector">
+        <button class="mod-btn active" id="btn-fsk" onclick="setModulation('FSK')">FSK</button>
+        <button class="mod-btn" id="btn-psk" onclick="setModulation('PSK')">PSK</button>
+        <button class="mod-btn" id="btn-qam" onclick="setModulation('QAM')">QAM</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label for="noiseSlider">Nivel de Ruido en el Canal:</label>
+      <div class="slider-container">
+        <input type="range" id="noiseSlider" min="0" max="100" value="30" oninput="render()">
+        <span class="val-display" id="noiseVal">30%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagrama de Flujo del Demodulador -->
+  <div class="pipeline">
+    <div class="step-box">
+      <div class="num">Etapa 1</div>
+      <div class="txt">Filtrado</div>
+    </div>
+    <div class="arrow-pipe">&rarr;</div>
+    <div class="step-box">
+      <div class="num">Etapa 2</div>
+      <div class="txt">Detección</div>
+    </div>
+    <div class="arrow-pipe">&rarr;</div>
+    <div class="step-box">
+      <div class="num">Etapa 3</div>
+      <div class="txt">Muestreo y Umbral</div>
+    </div>
+  </div>
+
+  <!-- Visualización de las 3 señales -->
+  <div class="canvas-stack">
+    <div class="graph-wrapper">
+      <span class="graph-title" style="color: var(--rx-color);">1. Entrada del Canal (Onda Analógica Ruidosa)</span>
+      <canvas id="rxCanvas"></canvas>
+    </div>
+    <div class="graph-wrapper">
+      <span class="graph-title" style="color: var(--filter-color);">2. Tras el Filtro (Onda Analógica Limpia)</span>
+      <canvas id="filterCanvas"></canvas>
+    </div>
+    <div class="graph-wrapper">
+      <span class="graph-title" style="color: var(--digital-color);">3. Salida Digital (Bits Recuperados)</span>
+      <canvas id="digitalCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Cuadro Explicativo -->
+  <div class="explanation-box" id="explanation">
+    Cargando explicación...
+  </div>
+</div>
+
+<script>
+  let currentMod = 'FSK';
+  const dataBits = [1, 0, 1, 1]; // Trama de bits de prueba
+
+  function setModulation(mod) {
+    currentMod = mod;
+    ['FSK', 'PSK', 'QAM'].forEach(m => {
+      const btn = document.getElementById(`btn-${m.toLowerCase()}`);
+      if (m === mod) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    render();
+  }
+
+  function setupCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx, width: rect.width, height: rect.height };
+  }
+
+  function render() {
+    const noiseLevel = parseInt(document.getElementById('noiseSlider').value);
+    document.getElementById('noiseVal').textContent = noiseLevel + '%';
+
+    drawRxWave(noiseLevel);
+    drawFilteredWave();
+    drawRecoveredBits();
+    updateExplanation();
+  }
+
+  // 1. ONDA ENTRADA RUIDOSA
+  function drawRxWave(noiseLevel) {
+    const canvas = document.getElementById('rxCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+    ctx.clearRect(0, 0, width, height);
+
+    const centerY = height / 2;
+    const maxAmp = (height / 2) - 10;
+    const numBits = dataBits.length;
+    const bitWidth = width / numBits;
+
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    let first = true;
+
+    dataBits.forEach((bit, i) => {
+      const xStart = i * bitWidth;
+      const pts = 80;
+      for (let p = 0; p <= pts; p++) {
+        const xRel = p / pts;
+        const x = xStart + (xRel * bitWidth);
+        
+        let amp = maxAmp;
+        let cycles = 2;
+        let phase = 0;
+
+        if (currentMod === 'FSK') cycles = bit === 1 ? 4 : 1.5;
+        else if (currentMod === 'PSK') phase = bit === 1 ? 0 : Math.PI;
+        else if (currentMod === 'QAM') {
+          const sym = i < 2 ? `${dataBits[0]}${dataBits[1]}` : `${dataBits[2]}${dataBits[3]}`;
+          if (sym === '11') { amp = maxAmp; phase = 0; }
+          else if (sym === '10') { amp = maxAmp * 0.4; phase = 0; }
+          else if (sym === '01') { amp = maxAmp; phase = Math.PI; }
+          else if (sym === '00') { amp = maxAmp * 0.4; phase = Math.PI; }
+        }
+
+        const angle = (2 * Math.PI * cycles * xRel) + phase;
+        const noise = (Math.random() - 0.5) * (noiseLevel * 0.4);
+        const y = centerY - (amp * Math.sin(angle)) + noise;
+
+        if (first) { ctx.moveTo(x, y); first = false; }
+        else { ctx.lineTo(x, y); }
+      }
+    });
+    ctx.stroke();
+  }
+
+  // 2. SEÑAL FILTRADA (Limpia)
+  function drawFilteredWave() {
+    const canvas = document.getElementById('filterCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+    ctx.clearRect(0, 0, width, height);
+
+    const centerY = height / 2;
+    const maxAmp = (height / 2) - 10;
+    const numBits = dataBits.length;
+    const bitWidth = width / numBits;
+
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    let first = true;
+
+    dataBits.forEach((bit, i) => {
+      const xStart = i * bitWidth;
+      const pts = 80;
+      for (let p = 0; p <= pts; p++) {
+        const xRel = p / pts;
+        const x = xStart + (xRel * bitWidth);
+
+        let amp = maxAmp;
+        let cycles = 2;
+        let phase = 0;
+
+        if (currentMod === 'FSK') cycles = bit === 1 ? 4 : 1.5;
+        else if (currentMod === 'PSK') phase = bit === 1 ? 0 : Math.PI;
+        else if (currentMod === 'QAM') {
+          const sym = i < 2 ? `${dataBits[0]}${dataBits[1]}` : `${dataBits[2]}${dataBits[3]}`;
+          if (sym === '11') { amp = maxAmp; phase = 0; }
+          else if (sym === '10') { amp = maxAmp * 0.4; phase = 0; }
+          else if (sym === '01') { amp = maxAmp; phase = Math.PI; }
+          else if (sym === '00') { amp = maxAmp * 0.4; phase = Math.PI; }
+        }
+
+        const angle = (2 * Math.PI * cycles * xRel) + phase;
+        const y = centerY - (amp * Math.sin(angle));
+
+        if (first) { ctx.moveTo(x, y); first = false; }
+        else { ctx.lineTo(x, y); }
+      }
+    });
+    ctx.stroke();
+  }
+
+  // 3. BITS RECUPERADOS
+  function drawRecoveredBits() {
+    const canvas = document.getElementById('digitalCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+    ctx.clearRect(0, 0, width, height);
+
+    const numBits = dataBits.length;
+    const bitWidth = width / numBits;
+    const padY = 15;
+    const yHigh = padY;
+    const yLow = height - padY;
+
+    // Líneas de muestreo puntual
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.setLineDash([3, 3]);
+    for (let i = 0; i < numBits; i++) {
+      const xSample = (i + 0.5) * bitWidth;
+      ctx.beginPath();
+      ctx.moveTo(xSample, 0);
+      ctx.lineTo(xSample, height);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Pulso Cuadrado
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    dataBits.forEach((bit, i) => {
+      const xStart = i * bitWidth;
+      const xEnd = (i + 1) * bitWidth;
+      const yVal = bit === 1 ? yHigh : yLow;
+
+      if (i === 0) ctx.moveTo(xStart, yVal);
+      else ctx.lineTo(xStart, yVal);
+      ctx.lineTo(xEnd, yVal);
+    });
+    ctx.stroke();
+
+    // Puntos de toma de decisión en cada muestra
+    dataBits.forEach((bit, i) => {
+      const xSample = (i + 0.5) * bitWidth;
+      const yVal = bit === 1 ? yHigh : yLow;
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(xSample, yVal, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function updateExplanation() {
+    const expDiv = document.getElementById('explanation');
+
+    if (currentMod === 'FSK') {
+      expDiv.innerHTML = `
+        <strong>Demodulación FSK (Frecuencia):</strong><br>
+        El demodulador mide la velocidad de las oscilaciones de la onda filtrada. Si detecta alta frecuencia decide un bit <strong>1</strong>; si detecta baja frecuencia, un bit <strong>0</strong>.
+      `;
+    } else if (currentMod === 'PSK') {
+      expDiv.innerHTML = `
+        <strong>Demodulación PSK (Fase):</strong><br>
+        El circuito detecta los cambios de dirección de la onda. Si la onda mantiene su fase original asigna un <strong>1</strong>, si se invierte (180°) asigna un <strong>0</strong>.
+      `;
+    } else if (currentMod === 'QAM') {
+      expDiv.innerHTML = `
+        <strong>Demodulación QAM (Amplitud + Fase):</strong><br>
+        El circuito analiza simultáneamente la altura (amplitud) y el punto de inicio (fase) de la onda para reconstruir el grupo de bits original (por ejemplo: <code>11</code>, <code>10</code>, <code>01</code> o <code>00</code>).
+      `;
+    }
+  }
+
+  window.addEventListener('resize', render);
+  render();
+</script>
+
+</div>
+</body>
+</html>

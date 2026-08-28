@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<style>
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  body { margin: 0; padding: 10px; background-color: #f1f5f9; color: #1e293b; }
+  .card { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-width: 950px; margin: 0 auto; border: 1px solid #e2e8f0; }
+  
+  h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.6rem; text-align: center; font-weight: 700; }
+  p.subtitle { text-align: center; color: #64748b; font-size: 0.95rem; margin-top: 0; margin-bottom: 20px; }
+
+  /* NAVEGACIÓN PASOS */
+  .nav-steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+  .step-btn { flex: 1; padding: 12px 8px; border: 2px solid #e2e8f0; background: #f8fafc; border-radius: 10px; font-weight: 600; font-size: 0.9rem; color: #64748b; cursor: pointer; transition: all 0.25s ease; text-align: center; }
+  .step-btn.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
+
+  /* ÁREA GRÁFICA */
+  .canvas-container { position: relative; background: #090d16; border-radius: 12px; overflow: hidden; border: 1px solid #1e293b; }
+  canvas { width: 100%; height: 300px; display: block; }
+  
+  .bits-banner { background: #1e293b; color: #38bdf8; font-family: monospace; padding: 10px; text-align: center; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid #334155; word-wrap: break-word; }
+  .bits-banner span { color: #f59e0b; font-weight: bold; }
+
+  /* CONTROLES DE REGULACIÓN DE BITS */
+  .controls-section { margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .control-card { background: #f8fafc; padding: 12px 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+  .control-card label { display: block; font-size: 0.9rem; font-weight: 700; color: #475569; margin-bottom: 6px; }
+  
+  input[type=range] { width: 100%; accent-color: #2563eb; cursor: pointer; }
+  input[type=text] { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 0.95rem; background: #fff; }
+  input[type=text]:focus { outline: none; border-color: #2563eb; }
+
+  /* CAJA INFORMATIVA */
+  .info-card { margin-top: 15px; padding: 15px; border-radius: 10px; font-size: 0.95rem; line-height: 1.5; background: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; }
+  .info-card b { color: #1d4ed8; }
+  
+  .badge { font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+  .badge-low { background: #fef3c7; color: #b45309; }
+  .badge-ok { background: #d1fae5; color: #047857; }
+  .badge-high { background: #fee2e2; color: #b91c1c; }
+
+/* ===== SHARED NAV ===== */
+
+/* ===== ANDROID / MOBILE COMPAT ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+nav, .nav-links a, .hamburger, button, select, input[type="range"] { touch-action: manipulation; }
+.hamburger { min-width: 40px; min-height: 40px; justify-content: center; align-items: center; }
+@media (max-width: 680px) {
+  .nav-links a { padding: 0.75rem 0.9rem; font-size: 0.95rem; }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid #cbd5e1;
+  position: sticky; top: 0; z-index: 999;
+  box-shadow: 0 1px 8px rgba(15,23,42,0.07);
+}
+.nav-inner {
+  max-width: 1060px; margin: 0 auto;
+  display: flex; align-items: center;
+  gap: 0.5rem; padding: 0 1rem; height: 52px;
+}
+.nav-brand {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.95rem; font-weight: 500;
+  color: #1d4ed8; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+}
+.nav-brand span { color: #94a3b8; }
+.nav-links {
+  display: flex; list-style: none;
+  gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-left: 0.5rem;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a {
+  text-decoration: none; color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-links a.active { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+.hamburger {
+  display: none; margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  flex-direction: column; gap: 4px; padding: 4px; flex-shrink: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; }
+@media (max-width: 680px) {
+  .hamburger { display: flex; }
+  .nav-links {
+    display: none; position: fixed;
+    top: 52px; left: 0; right: 0;
+    background: #ffffff; border-bottom: 1px solid #e2e8f0;
+    flex-direction: column; padding: 0.5rem 1rem 1rem;
+    gap: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 0.6rem 0.8rem; font-size: 0.95rem; }
+}
+
+body { padding-top: 0 !important; }
+.page-outer { padding: 20px; max-width: 1060px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">TELE<span>·</span>II</a>
+    <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links"><li><a href="index.html">Inicio</a></li>
+<li><a href="CODIFICADOR-FUENTE.html">Cod. Fuente</a></li>
+<li><a href="CODIFICADOR-CANAL.html">Cod. Canal</a></li>
+<li><a href="MODULADOR-DIGITAL.html">Modulador</a></li>
+<li><a href="CANAL.html">Canal</a></li>
+<li><a href="DECODIFICADOR-CANAL.html">Decod. Canal</a></li>
+<li><a href="DEMODULADOR-DIGITAL.html">Demodulador</a></li>
+<li><a href="DECODIFICADOR-FUENTE.html" class="active">Decod. Fuente</a></li>
+</ul>
+  </div>
+</nav>
+<div class="page-outer">
+
+<div class="card">
+  <h2>Decodificador de Fuente Configurable</h2>
+  <p class="subtitle">Modifica la resolución en bits o ingresa tus propios datos de entrada</p>
+
+  <!-- Navegación de Etapas -->
+  <div class="nav-steps">
+    <div id="tab-1" class="step-btn active" onclick="setStep(1)">1. Mapeo de Bits</div>
+    <div id="tab-2" class="step-btn" onclick="setStep(2)">2. Retenedor (DAC)</div>
+    <div id="tab-3" class="step-btn" onclick="setStep(3)">3. Filtro Paso Bajo</div>
+  </div>
+
+  <!-- Pantalla Visual -->
+  <div class="canvas-container">
+    <div class="bits-banner" id="bitsBanner">Cargando bits...</div>
+    <canvas id="dacCanvas"></canvas>
+  </div>
+
+  <!-- Panel de Regulación y Edición de Bits -->
+  <div class="controls-section">
+    <div class="control-card">
+      <label for="bitDepthSlider">Resolución de Entrada: <span id="bitDepthVal" style="color:#2563eb">3 Bits</span></label>
+      <input type="range" id="bitDepthSlider" min="2" max="5" value="3" oninput="updateBitDepth()">
+    </div>
+
+    <div class="control-card">
+      <label for="customBitsInput">Secuencia Binaria (Separada por espacio):</label>
+      <input type="text" id="customBitsInput" value="001 100 110 111 101 011 010" oninput="updateCustomBits()">
+    </div>
+
+    <div class="control-card" id="filterCard" style="opacity: 0.5; pointer-events: none;">
+      <label for="cutoffSlider">Filtro Paso Bajo (RC): <span id="cutoffVal" style="color:#10b981">50%</span> <span id="filterBadge" class="badge badge-ok">Óptimo</span></label>
+      <input type="range" id="cutoffSlider" min="0" max="100" value="50" oninput="updateFilter()">
+    </div>
+  </div>
+
+  <!-- Explicación -->
+  <div class="info-card" id="infoBox">
+    <b>Paso 1: Mapeo de Símbolos Binarios</b><br>
+    El decodificador toma el flujo binario recibido y asigna a cada bloque de bits un nivel de tensión discreto.
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+  let bitDepth = 3;
+  let binaryList = ["001", "100", "110", "111", "101", "011", "010"];
+  let numericSamples = [1, 4, 6, 7, 5, 3, 2];
+
+  const canvas = document.getElementById('dacCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    draw();
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  function setStep(step) {
+    currentStep = step;
+    document.querySelectorAll('.step-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', (idx + 1) === step);
+    });
+
+    const filterCard = document.getElementById('filterCard');
+    if (step === 3) {
+      filterCard.style.opacity = "1";
+      filterCard.style.pointerEvents = "auto";
+    } else {
+      filterCard.style.opacity = "0.5";
+      filterCard.style.pointerEvents = "none";
+    }
+
+    updateInfoText();
+    draw();
+  }
+
+  function updateBitDepth() {
+    bitDepth = parseInt(document.getElementById('bitDepthSlider').value);
+    document.getElementById('bitDepthVal').innerText = `${bitDepth} Bits (${Math.pow(2, bitDepth)} Niveles)`;
+    
+    let maxVal = Math.pow(2, bitDepth) - 1;
+    let defaultValues = [
+      Math.round(maxVal * 0.15),
+      Math.round(maxVal * 0.5),
+      Math.round(maxVal * 0.85),
+      maxVal,
+      Math.round(maxVal * 0.7),
+      Math.round(maxVal * 0.3),
+      Math.round(maxVal * 0.2)
+    ];
+
+    binaryList = defaultValues.map(val => val.toString(2).padStart(bitDepth, '0'));
+    document.getElementById('customBitsInput').value = binaryList.join(' ');
+    
+    processBits();
+  }
+
+  function updateCustomBits() {
+    let inputVal = document.getElementById('customBitsInput').value.trim();
+    if(inputVal.length > 0) {
+      binaryList = inputVal.split(/\s+/);
+      processBits();
+    }
+  }
+
+  function updateFilter() {
+    let val = parseInt(document.getElementById('cutoffSlider').value);
+    document.getElementById('cutoffVal').innerText = val + "%";
+    
+    let badge = document.getElementById('filterBadge');
+    if (val < 20) {
+      badge.innerText = "Bajo (Ruido Ruido Armónico)";
+      badge.className = "badge badge-low";
+    } else if (val <= 75) {
+      badge.innerText = "Óptimo (Suave)";
+      badge.className = "badge badge-ok";
+    } else {
+      badge.innerText = "Sobrefiltrado (Atenuado)";
+      badge.className = "badge badge-high";
+    }
+
+    draw();
+  }
+
+  function processBits() {
+    numericSamples = binaryList.map(b => parseInt(b, 2) || 0);
+    let bannerHTML = "Bits de entrada: " + binaryList.map(b => `<span>${b}</span>`).join(' | ');
+    document.getElementById('bitsBanner').innerHTML = bannerHTML;
+    draw();
+  }
+
+  function updateInfoText() {
+    const box = document.getElementById('infoBox');
+    if (currentStep === 1) {
+      box.innerHTML = `<b>Paso 1: Mapeo de Símbolos Binarios</b><br>Con <b>${bitDepth} bits</b> por muestra, el sistema tiene ${Math.pow(2, bitDepth)} niveles de cuantificación distintos. Cada palabra binaria se asigna a su valor numérico equivalente.`;
+    } else if (currentStep === 2) {
+      box.innerHTML = "<b>Paso 2: Retenedor DAC (Circuito de Orden Cero)</b><br>El circuito sostiene el nivel de tensión constante para cada bit durante el periodo de muestra, creando la onda en <i>escalera</i>.";
+    } else if (currentStep === 3) {
+      box.innerHTML = "<b>Paso 3: Filtro Paso Bajo de Reconstrucción (Respuesta RC)</b><br>Modula el regulador para alterar la velocidad de respuesta del circuito. Un valor bajo deja ver los bordes de la escalera; un valor idóneo entrega una curva analógica continua y suave.";
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const w = canvas.width;
+    const h = canvas.height;
+    const padding = 40;
+    const maxPossibleVal = Math.max(Math.pow(2, bitDepth) - 1, ...numericSamples, 1);
+    const stepX = (w - 2 * padding) / Math.max(numericSamples.length - 1, 1);
+    
+    // Grilla
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+      let y = h - padding - (i * (h - 2 * padding) / 6);
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(w - padding, y);
+      ctx.stroke();
+    }
+
+    if (numericSamples.length === 0) return;
+
+    // PASO 1: Puntos discretos
+    if (currentStep === 1) {
+      numericSamples.forEach((val, i) => {
+        let x = padding + i * stepX;
+        let y = h - padding - (val * (h - 2 * padding) / maxPossibleVal);
+        
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px monospace';
+        ctx.fillText(`v=${val}`, x - 8, y - 12);
+      });
+    } 
+    // PASO 2: Escalera (DAC)
+    else if (currentStep === 2) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      for (let i = 0; i < numericSamples.length - 1; i++) {
+        let x1 = padding + i * stepX;
+        let x2 = padding + (i + 1) * stepX;
+        let y1 = h - padding - (numericSamples[i] * (h - 2 * padding) / maxPossibleVal);
+        let y2 = h - padding - (numericSamples[i+1] * (h - 2 * padding) / maxPossibleVal);
+
+        if (i === 0) ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.stroke();
+    } 
+    // PASO 3: Filtro Paso Bajo (Respuesta RC / Simulación Continua)
+    else if (currentStep === 3) {
+      const filterVal = parseFloat(document.getElementById('cutoffSlider').value);
+
+      // Línea en escalera de referencia
+      ctx.strokeStyle = '#334155';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < numericSamples.length - 1; i++) {
+        let x1 = padding + i * stepX;
+        let x2 = padding + (i + 1) * stepX;
+        let y1 = h - padding - (numericSamples[i] * (h - 2 * padding) / maxPossibleVal);
+        let y2 = h - padding - (numericSamples[i+1] * (h - 2 * padding) / maxPossibleVal);
+        if (i === 0) ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Si el filtro está en 0%, mostramos exactamente la escalera
+      if (filterVal === 0) {
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i < numericSamples.length - 1; i++) {
+          let x1 = padding + i * stepX;
+          let x2 = padding + (i + 1) * stepX;
+          let y1 = h - padding - (numericSamples[i] * (h - 2 * padding) / maxPossibleVal);
+          let y2 = h - padding - (numericSamples[i+1] * (h - 2 * padding) / maxPossibleVal);
+          if (i === 0) ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y1);
+          ctx.lineTo(x2, y2);
+        }
+        ctx.stroke();
+        return;
+      }
+
+      // Simulación física de carga/descarga RC por sub-puntos
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+
+      // alpha representa la velocidad de respuesta del filtro RC
+      let alpha = 1 - (filterVal / 105); 
+      let currentY = h - padding - (numericSamples[0] * (h - 2 * padding) / maxPossibleVal);
+
+      ctx.moveTo(padding, currentY);
+
+      let totalStepsX = w - 2 * padding;
+      for (let pixelX = 0; pixelX <= totalStepsX; pixelX += 2) {
+        let sampleIndex = Math.min(
+          Math.floor((pixelX / totalStepsX) * (numericSamples.length - 1)),
+          numericSamples.length - 1
+        );
+        let targetY = h - padding - (numericSamples[sampleIndex] * (h - 2 * padding) / maxPossibleVal);
+        
+        // Ecuación diferencial discreta RC: y[k] = y[k-1] + alpha * (target - y[k-1])
+        currentY = currentY + alpha * (targetY - currentY);
+        
+        let actualX = padding + pixelX;
+        ctx.lineTo(actualX, currentY);
+      }
+      ctx.stroke();
+    }
+  }
+
+  setTimeout(() => {
+    resizeCanvas();
+    updateBitDepth();
+  }, 100);
+</script>
+
+</div>
+</body>
+</html>
